@@ -1,0 +1,92 @@
+[
+  {
+    "cargo": "Analista de Dados",
+    "senioridade": "junior",
+    "p25": 2264,
+    "mediana": 3516,
+    "p75": 5085,
+    "n_respondentes": 120,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Cientista de Dados",
+    "senioridade": "junior",
+    "p25": 3277,
+    "mediana": 5667,
+    "p75": 8687,
+    "n_respondentes": 72,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Engenheiro de Dados",
+    "senioridade": "junior",
+    "p25": 2915,
+    "mediana": 4347,
+    "p75": 5824,
+    "n_respondentes": 96,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Analista de Dados",
+    "senioridade": "pleno",
+    "p25": 4848,
+    "mediana": 6560,
+    "p75": 8772,
+    "n_respondentes": 280,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Cientista de Dados",
+    "senioridade": "pleno",
+    "p25": 7279,
+    "mediana": 9350,
+    "p75": 11379,
+    "n_respondentes": 168,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Engenheiro de Dados",
+    "senioridade": "pleno",
+    "p25": 6797,
+    "mediana": 8790,
+    "p75": 11181,
+    "n_respondentes": 224,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Analista de Dados",
+    "senioridade": "senior",
+    "p25": 7917,
+    "mediana": 10131,
+    "p75": 12949,
+    "n_respondentes": 280,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Cientista de Dados",
+    "senioridade": "senior",
+    "p25": 11833,
+    "mediana": 14919,
+    "p75": 21490,
+    "n_respondentes": 168,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Engenheiro de Dados",
+    "senioridade": "senior",
+    "p25": 11703,
+    "mediana": 15285,
+    "p75": 22219,
+    "n_respondentes": 224,
+    "fonte": "State of Data Brazil 2025-2026"
+  },
+  {
+    "cargo": "Geral (todas as funções)",
+    "senioridade": "staff",
+    "p25": 9303,
+    "mediana": 17805,
+    "p75": 23902,
+    "n_respondentes": 260,
+    "fonte": "State of Data Brazil 2025-2026"
+  }
+]

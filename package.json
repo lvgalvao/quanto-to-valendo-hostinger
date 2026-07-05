@@ -1,0 +1,11 @@
+{
+  "name": "quanto-to-valendo-whatsapp",
+  "version": "7.0.0",
+  "private": true,
+  "description": "Agente de análise salarial para profissionais de dados, nativo no WhatsApp (State of Data Brazil).",
+  "scripts": {
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "test": "npm --prefix backend test"
+  }
+}
