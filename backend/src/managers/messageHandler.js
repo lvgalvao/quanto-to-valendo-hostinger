@@ -192,38 +192,33 @@ export async function processarMensagem(connectionId, msg, sock) {
     const temGatilho = contemGatilho(extrairTextoMsg(message));
     const armado = !!repo.getConversa(conversa.id).aguardando_cv;
 
-    // GATE: só inicia o atendimento se veio a palavra ANALISE (ou a conversa já
-    // foi armada por ela). Sem gatilho e sem estar armado => só orienta.
+    // FLUXO DE 2 ETAPAS.
+    // Etapa 0 (gate): sem a palavra ANALISE e sem estar armado => SILÊNCIO.
+    // Só a palavra ANALISE inicia o atendimento (sem saudação/"oi").
     if (!temGatilho && !armado) {
-      await responder(
-        sock,
-        connectionId,
-        conversa,
-        'Oi! Sou o *Quanto Tô Valendo* 👋\n\nQuer descobrir quanto você tá valendo no mercado de dados? Envie a palavra *ANALISE* que eu começo. 🚀'
-      );
       return;
     }
 
-    // Veio o gatilho, mas ainda sem um CV nesta mensagem => arma e pede o CV.
+    // Etapa 1: veio ANALISE, mas ainda sem CV => arma e pede o PDF.
     if (temGatilho && !temCV) {
       repo.setAguardandoCv(conversa.id, true);
       await responder(
         sock,
         connectionId,
         conversa,
-        'Perfeito! 📄 Agora me manda seu *currículo em PDF* ou *cola o texto completo* aqui que eu faço sua análise.'
+        'Boa! 🚀 Agora me envia seu *currículo em PDF* que eu analiso quanto você tá valendo.\n\n_(se preferir, pode colar o texto completo do currículo aqui também)_'
       );
       return;
     }
 
-    // Já armado, mas a mensagem não traz um CV válido => orienta e continua armado.
+    // Etapa 2: já armado, esperando o PDF, mas veio outra coisa => orienta (segue armado).
     if (armado && !temCV) {
       if (rota.acao === 'doc_nao_pdf') {
-        await responder(sock, connectionId, conversa, 'Recebi seu arquivo, mas só consigo ler *PDF*. Me manda o currículo em PDF ou cola o texto aqui no chat. 🙂');
+        await responder(sock, connectionId, conversa, 'Recebi seu arquivo, mas só consigo ler *PDF*. Me envia o currículo em *PDF* (ou cola o texto aqui). 🙂');
         return;
       }
       // texto_curto
-      await responder(sock, connectionId, conversa, 'Pra eu analisar direito, cola seu *currículo completo* aqui (experiência, cargos, tecnologias) ou manda o *PDF*. Com pouco texto eu não consigo estimar sua faixa. 🙂');
+      await responder(sock, connectionId, conversa, 'Ainda tô esperando seu currículo 📄. Me manda o *PDF* ou cola o *texto completo* (com experiência, cargos e tecnologias). 🙂');
       return;
     }
 
