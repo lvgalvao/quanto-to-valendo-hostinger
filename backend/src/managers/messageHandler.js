@@ -108,13 +108,29 @@ export function classificarConteudo(message) {
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Delay "humano" aplicado antes de CADA resposta do bot (com "digitando..."),
+// para não parecer robô que responde instantâneo. Ajuste aqui se quiser.
+export const DELAY_MIN_MS = 1500;
+export const DELAY_MAX_MS = 2500;
+const delayHumano = () => DELAY_MIN_MS + Math.random() * (DELAY_MAX_MS - DELAY_MIN_MS);
+
 function emitirConversaAtualizada(connectionId, conversaId) {
   if (io) io.emit('conversation_update', { connectionId, conversaId });
 }
 
-/** Envia texto pelo socket, persiste como mensagem do agente e notifica o painel. */
-async function responder(sock, connectionId, conversa, texto, tipo = 'texto') {
+/**
+ * Envia texto pelo socket com ritmo humano: mostra "digitando...", espera 1,5–2,5s,
+ * envia, persiste e notifica o painel.
+ * @param {object} [opts]
+ * @param {boolean} [opts.semDelay] pula o delay (uso raro; padrão é humano)
+ */
+async function responder(sock, connectionId, conversa, texto, tipo = 'texto', opts = {}) {
+  if (!opts.semDelay) {
+    await conexoes.enviarPresenca(connectionId, conversa.remote_jid, 'composing');
+    await dormir(delayHumano());
+  }
   await sock.sendMessage(conversa.remote_jid, { text: texto });
+  await conexoes.enviarPresenca(connectionId, conversa.remote_jid, 'paused');
   repo.inserirMensagem(conversa.id, 'agente', tipo, texto);
   emitirConversaAtualizada(connectionId, conversa.id);
 }
@@ -129,14 +145,11 @@ async function baixarPdf(msg, sock) {
   return extrairTexto(buffer);
 }
 
-/** Envia as 5 mensagens da análise com presença "digitando" e intervalo humano. */
+/** Envia as 5 mensagens da análise, cada uma com o ritmo humano do responder(). */
 async function enviarAnalise(sock, connectionId, conversa, mensagens) {
   for (const texto of mensagens) {
-    await conexoes.enviarPresenca(connectionId, conversa.remote_jid, 'composing');
-    await dormir(1500 + Math.random() * 1000); // 1,5–2,5s
     await responder(sock, connectionId, conversa, texto);
   }
-  await conexoes.enviarPresenca(connectionId, conversa.remote_jid, 'paused');
 }
 
 /**
@@ -231,8 +244,7 @@ export async function processarMensagem(connectionId, msg, sock) {
       textoCV = rota.texto;
     }
 
-    // 5. Feedback imediato.
-    await conexoes.enviarPresenca(connectionId, remoteJid, 'composing');
+    // 5. Feedback ("digitando..." + delay humano já embutidos no responder).
     await responder(sock, connectionId, conversa, '🔍 Analisando seu currículo...', 'sistema');
 
     // 6. Análise (config atual do painel: modelo + override).
