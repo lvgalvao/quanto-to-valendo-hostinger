@@ -38,7 +38,7 @@ router.post('/:id/connect', async (req, res) => {
   const conexao = repo.getConexao(req.params.id);
   if (!conexao) return res.status(404).json({ erro: 'conexão não encontrada' });
   try {
-    await conexoes.conectar(req.params.id);
+    await conexoes.conectar(req.params.id, { manual: true });
     res.status(202).json({ ok: true, status: 'connecting' });
   } catch (e) {
     console.error('[connections] falha ao conectar', e.message);

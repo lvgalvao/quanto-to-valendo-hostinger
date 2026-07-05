@@ -21,6 +21,8 @@ const SESSIONS_DIR = join(__dirname, '../../sessions');
 const logger = pino({ level: 'silent' }); // Baileys é verboso; silenciamos o log interno
 
 const sockets = new Map(); // connectionId -> WASocket
+// IDs parados manualmente (Desconectar/Excluir). Impede a reconexão automática.
+const paradaManual = new Set();
 let io = null;
 let onMensagem = null; // (connectionId, msg, sock) => Promise<void>
 
@@ -41,8 +43,17 @@ function pastaSessao(connectionId) {
   return join(SESSIONS_DIR, connectionId);
 }
 
-/** Inicia (ou reinicia) uma conexão. Reusa a sessão salva se existir — sem novo QR. */
-export async function conectar(connectionId) {
+/**
+ * Inicia (ou reinicia) uma conexão. Reusa a sessão salva se existir — sem novo QR.
+ * @param {string} connectionId
+ * @param {{manual?: boolean}} [opts] manual=true quando disparado pelo usuário (botão
+ *   Conectar): limpa a marca de parada. Reconexões automáticas passam manual=false e
+ *   são abortadas se a conexão foi parada manualmente.
+ */
+export async function conectar(connectionId, opts = {}) {
+  if (opts.manual) paradaManual.delete(connectionId);
+  else if (paradaManual.has(connectionId)) return null; // não reconecta o que foi parado
+
   if (sockets.has(connectionId)) return sockets.get(connectionId);
 
   const { state, saveCreds } = await useMultiFileAuthState(pastaSessao(connectionId));
@@ -93,6 +104,13 @@ export async function conectar(connectionId) {
         `[connectionManager] ${connectionId}: close (statusCode=${code} msg=${lastDisconnect?.error?.message || '-'})`
       );
 
+      // Parada manual (Desconectar/Excluir): NÃO reconecta.
+      if (paradaManual.has(connectionId)) {
+        console.log(`[connectionManager] ${connectionId}: parada manual — sem reconexão`);
+        emitirStatus(connectionId, 'close');
+        return;
+      }
+
       if (code === DisconnectReason.loggedOut) {
         // Sessão inválida (deslogado): limpa para permitir novo pareamento.
         try {
@@ -137,32 +155,37 @@ export async function conectar(connectionId) {
   return sock;
 }
 
+/**
+ * Desconecta a conexão ativa MAS mantém a sessão salva (Conectar reconecta sem
+ * novo QR). Marca parada manual para o handler de close não reconectar sozinho.
+ */
 export async function desconectar(connectionId) {
+  paradaManual.add(connectionId);
   const sock = sockets.get(connectionId);
   if (sock) {
     try {
-      await sock.logout();
-    } catch {
-      try {
-        sock.end();
-      } catch {}
-    }
+      sock.end(new Error('desconexão manual'));
+    } catch {}
     sockets.delete(connectionId);
   }
   emitirStatus(connectionId, 'close');
 }
 
+/** Remove a conexão de vez: encerra o socket e apaga a sessão do disco. */
 export async function removerSessao(connectionId) {
+  paradaManual.add(connectionId);
   const sock = sockets.get(connectionId);
   if (sock) {
     try {
-      sock.end();
+      sock.end(new Error('remoção manual'));
     } catch {}
     sockets.delete(connectionId);
   }
   try {
     rmSync(pastaSessao(connectionId), { recursive: true, force: true });
   } catch {}
+  // Mantém na parada manual: bloqueia qualquer reconexão pendente de ressuscitar
+  // a conexão excluída. connectionIds são uuids (nunca reusados).
 }
 
 export function isConectado(connectionId) {
@@ -184,12 +207,16 @@ export async function enviarPresenca(connectionId, jid, estado = 'composing') {
   } catch {}
 }
 
-/** No boot, religa todas as conexões que tinham sessão salva. */
+/**
+ * No boot, religa apenas as conexões que estavam conectadas (status 'open') —
+ * respeita quem foi desconectado manualmente (status 'close').
+ */
 export async function reconectarSalvas() {
   const conexoes = repo.listarConexoes();
   for (const c of conexoes) {
+    if (c.status === 'close') continue; // não religa desconexão manual / nunca conectada
     try {
-      await conectar(c.id);
+      await conectar(c.id, { manual: true });
     } catch (e) {
       console.error(`[connectionManager] falha ao religar ${c.id}`, e.message);
     }

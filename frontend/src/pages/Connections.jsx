@@ -101,8 +101,8 @@ export default function Connections({ onMudou }) {
                     {c.status === 'open' ? ' Desconectar' : ' Cancelar'}
                   </button>
                 )}
-                <button className="btn-perigo" onClick={() => excluir(c.id)}>
-                  <Trash2 size={14} />
+                <button className="btn-perigo" onClick={() => excluir(c.id)} title="Remove a conexão e apaga a sessão">
+                  <Trash2 size={14} style={{ verticalAlign: '-2px', marginRight: 5 }} /> Excluir
                 </button>
               </div>
             </div>
