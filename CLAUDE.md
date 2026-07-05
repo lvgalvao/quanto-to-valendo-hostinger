@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Implemented (v7). Backend (`backend/`) + admin panel (`frontend/`) are built and the 32-test Vitest suite is green. Full spec lives in `.llm/prd.md` (source of truth); delivered features are logged in `.llm/features/`.
+Implemented (v7). Backend (`backend/`) + admin panel (`frontend/`) are built and the 32-test Vitest suite is green. Full spec lives in `.llm/prd.md` — the **single source of truth** (product spec + implementation map in Appendix C).
 
 Verified headlessly: tests, backend boot + `X-Admin-Token` auth (routes and Socket.IO handshake), the Baileys→Socket.IO event pipeline, and the frontend build. **Not** verifiable in a sandbox (needs real WhatsApp egress + an API key): the live QR scan and a real agent analysis — do these on the VPS.
 
