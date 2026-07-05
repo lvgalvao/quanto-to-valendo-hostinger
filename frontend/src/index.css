@@ -365,6 +365,41 @@ select {
   margin-bottom: 16px;
   letter-spacing: 0.02em;
 }
+.card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.stat > svg {
+  color: var(--azul);
+  stroke-width: 1.75;
+  flex: none;
+  opacity: 0.85;
+}
+.stat .v {
+  font-family: 'Inter', monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.stat .l {
+  font-size: 10.5px;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 1px;
+}
+
 .card-acoes {
   display: flex;
   gap: 8px;

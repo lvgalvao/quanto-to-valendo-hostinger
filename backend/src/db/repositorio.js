@@ -16,14 +16,38 @@ export function getConexao(id) {
 }
 
 export function listarConexoes() {
-  return db.prepare('SELECT * FROM conexoes ORDER BY criada_em DESC').all();
+  return db
+    .prepare(
+      `SELECT c.*,
+              (SELECT COUNT(*) FROM conversas cv WHERE cv.connection_id = c.id) AS total_conversas,
+              (SELECT COUNT(*) FROM mensagens m JOIN conversas cv ON m.conversa_id = cv.id
+                 WHERE cv.connection_id = c.id AND m.papel = 'usuario') AS msgs_recebidas,
+              (SELECT COUNT(*) FROM mensagens m JOIN conversas cv ON m.conversa_id = cv.id
+                 WHERE cv.connection_id = c.id AND m.papel = 'agente') AS msgs_agente
+       FROM conexoes c
+       ORDER BY c.criada_em DESC`
+    )
+    .all();
 }
 
 export function atualizarStatusConexao(id, status, numero) {
+  // conectado_em marca o início do uptime: setado quando abre, zerado ao fechar.
+  if (status === 'open') {
+    if (numero !== undefined) {
+      db.prepare(
+        "UPDATE conexoes SET status = 'open', numero = ?, conectado_em = datetime('now') WHERE id = ?"
+      ).run(numero, id);
+    } else {
+      db.prepare(
+        "UPDATE conexoes SET status = 'open', conectado_em = datetime('now') WHERE id = ?"
+      ).run(id);
+    }
+    return;
+  }
   if (numero !== undefined) {
-    db.prepare('UPDATE conexoes SET status = ?, numero = ? WHERE id = ?').run(status, numero, id);
+    db.prepare('UPDATE conexoes SET status = ?, numero = ?, conectado_em = NULL WHERE id = ?').run(status, numero, id);
   } else {
-    db.prepare('UPDATE conexoes SET status = ? WHERE id = ?').run(status, id);
+    db.prepare('UPDATE conexoes SET status = ?, conectado_em = NULL WHERE id = ?').run(status, id);
   }
 }
 

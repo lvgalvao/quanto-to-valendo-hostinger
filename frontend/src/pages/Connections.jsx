@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Power, PowerOff, Trash2 } from 'lucide-react';
+import { Plus, Power, PowerOff, Trash2, Clock, MessageSquare, Bot, Users } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { getSocket } from '../lib/socket.js';
 
@@ -11,17 +11,40 @@ const STATUS_BADGE = {
   close: { classe: 'badge-close', texto: 'Desconectado' },
 };
 
+/** Formata o uptime a partir de conectado_em (UTC do SQLite) até agora. */
+function formatarUptime(conectadoEm, agora) {
+  if (!conectadoEm) return '—';
+  const inicio = new Date(conectadoEm.replace(' ', 'T') + 'Z').getTime();
+  let s = Math.max(0, Math.floor((agora - inicio) / 1000));
+  const d = Math.floor(s / 86400);
+  s -= d * 86400;
+  const h = Math.floor(s / 3600);
+  s -= h * 3600;
+  const m = Math.floor(s / 60);
+  s -= m * 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 export default function Connections({ onMudou }) {
   const [conexoes, setConexoes] = useState([]);
   const [modalNova, setModalNova] = useState(false);
   const [nome, setNome] = useState('');
   const [qr, setQr] = useState(null); // { connectionId, dataUrl }
+  const [agora, setAgora] = useState(Date.now()); // tick para o uptime ao vivo
 
   async function carregar() {
     const { data } = await api.get('/api/connections');
     setConexoes(data);
     onMudou?.();
   }
+
+  useEffect(() => {
+    const t = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     carregar();
@@ -38,11 +61,14 @@ export default function Connections({ onMudou }) {
       onMudou?.();
     };
     const onQr = ({ connectionId, qr: dataUrl }) => setQr({ connectionId, dataUrl });
+    const onConversa = () => carregar(); // atualiza contadores de mensagens
     socket.on('connection_status', onStatus);
     socket.on('qr_update', onQr);
+    socket.on('conversation_update', onConversa);
     return () => {
       socket.off('connection_status', onStatus);
       socket.off('qr_update', onQr);
+      socket.off('conversation_update', onConversa);
     };
   }, []);
 
@@ -92,6 +118,38 @@ export default function Connections({ onMudou }) {
               <span className={`badge ${b.classe}`}>
                 <span className="dot" /> {b.texto}
               </span>
+
+              <div className="card-stats">
+                <div className="stat">
+                  <Clock size={17} />
+                  <div>
+                    <div className="v">{c.status === 'open' ? formatarUptime(c.conectado_em, agora) : '—'}</div>
+                    <div className="l">ativo</div>
+                  </div>
+                </div>
+                <div className="stat">
+                  <Users size={17} />
+                  <div>
+                    <div className="v">{c.total_conversas ?? 0}</div>
+                    <div className="l">contatos</div>
+                  </div>
+                </div>
+                <div className="stat">
+                  <MessageSquare size={17} />
+                  <div>
+                    <div className="v">{c.msgs_recebidas ?? 0}</div>
+                    <div className="l">recebidas</div>
+                  </div>
+                </div>
+                <div className="stat">
+                  <Bot size={17} />
+                  <div>
+                    <div className="v">{c.msgs_agente ?? 0}</div>
+                    <div className="l">respostas</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="card-acoes">
                 {c.status === 'close' ? (
                   <button className="btn-verde" onClick={() => conectar(c.id)}>

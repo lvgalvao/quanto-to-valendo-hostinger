@@ -24,6 +24,7 @@ export function migrar() {
       nome TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'close',
       numero TEXT,
+      conectado_em TEXT,
       criada_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -61,6 +62,11 @@ export function migrar() {
   const colunas = db.prepare('PRAGMA table_info(conversas)').all().map((c) => c.name);
   if (!colunas.includes('aguardando_cv')) {
     db.exec('ALTER TABLE conversas ADD COLUMN aguardando_cv INTEGER NOT NULL DEFAULT 0');
+  }
+  // Migração defensiva: conectado_em em conexoes (para uptime).
+  const colsConexoes = db.prepare('PRAGMA table_info(conexoes)').all().map((c) => c.name);
+  if (!colsConexoes.includes('conectado_em')) {
+    db.exec('ALTER TABLE conexoes ADD COLUMN conectado_em TEXT');
   }
 
   // Defaults de configuração (só insere se ausente).
