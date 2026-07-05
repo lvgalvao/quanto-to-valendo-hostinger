@@ -71,10 +71,12 @@ export default function Connections({ onMudou }) {
   return (
     <>
       <div className="topo">
-        <h1>Conexões</h1>
-        <button className="btn-verde" onClick={() => setModalNova(true)}>
-          <Plus size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
-          Nova Conexão
+        <div>
+          <h1>Conexões</h1>
+          <div className="sub">Números de WhatsApp conectados ao agente.</div>
+        </div>
+        <button className="btn-primary" onClick={() => setModalNova(true)}>
+          <Plus size={17} /> Nova Conexão
         </button>
       </div>
 
@@ -122,7 +124,7 @@ export default function Connections({ onMudou }) {
               <button type="button" className="btn-ghost" onClick={() => setModalNova(false)}>
                 Cancelar
               </button>
-              <button className="btn-verde">Criar</button>
+              <button className="btn-primary">Criar</button>
             </div>
           </form>
         </div>
@@ -132,8 +134,10 @@ export default function Connections({ onMudou }) {
         <div className="overlay" onClick={() => setQr(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Escaneie no WhatsApp</h2>
-            <img src={qr.dataUrl} alt="QR Code" />
-            <p className="mudo" style={{ marginTop: 14, fontSize: 12 }}>
+            <div className="qr-wrap">
+              <img src={qr.dataUrl} alt="QR Code" />
+            </div>
+            <p className="mudo" style={{ marginTop: 16, fontSize: 12.5 }}>
               WhatsApp › Aparelhos conectados › Conectar aparelho
             </p>
           </div>

@@ -35,8 +35,11 @@ export default function Settings() {
   return (
     <>
       <div className="topo">
-        <h1>Configurações</h1>
-        <button className="btn-verde" onClick={salvar} disabled={salvando}>
+        <div>
+          <h1>Configurações</h1>
+          <div className="sub">Modelo, prompt do agente e chave-mestra do atendimento.</div>
+        </div>
+        <button className="btn-primary" onClick={salvar} disabled={salvando}>
           {salvando ? 'Salvando...' : 'Salvar'}
         </button>
       </div>

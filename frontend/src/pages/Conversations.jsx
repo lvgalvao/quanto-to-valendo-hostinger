@@ -53,7 +53,10 @@ export default function Conversations() {
   return (
     <>
       <div className="topo">
-        <h1>Conversas</h1>
+        <div>
+          <h1>Conversas</h1>
+          <div className="sub">Histórico em tempo real de quem falou com o agente.</div>
+        </div>
       </div>
       <div className="split">
         <div className="lista-conversas">

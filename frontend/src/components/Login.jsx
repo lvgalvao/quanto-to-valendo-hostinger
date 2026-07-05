@@ -27,7 +27,7 @@ export default function Login({ onEntrar }) {
         <div className="brand">
           Quanto <span>Tô Valendo</span>
         </div>
-        <div className="brand-sub">Painel administrativo</div>
+        <div className="brand-sub">por Jornada de Dados</div>
         <div className="campo-form">
           <label>Admin token</label>
           <input
@@ -38,7 +38,7 @@ export default function Login({ onEntrar }) {
             autoFocus
           />
         </div>
-        <button className="btn-verde" style={{ width: '100%' }} disabled={carregando}>
+        <button className="btn-primary btn-lg btn-block" disabled={carregando}>
           {carregando ? 'Verificando...' : 'Entrar'}
         </button>
       </form>

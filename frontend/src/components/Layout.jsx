@@ -8,19 +8,20 @@ export default function Layout({ children, conexoesAtivas }) {
         <div className="brand">
           Quanto <span>Tô Valendo</span>
         </div>
-        <div className="brand-sub">Painel · WhatsApp Edition</div>
+        <div className="brand-sub">por Jornada de Dados</div>
 
         <NavLink to="/connections" className={({ isActive }) => 'nav-item' + (isActive ? ' ativo' : '')}>
-          <Smartphone size={18} /> Conexões
+          <Smartphone size={19} /> Conexões
         </NavLink>
         <NavLink to="/conversations" className={({ isActive }) => 'nav-item' + (isActive ? ' ativo' : '')}>
-          <MessagesSquare size={18} /> Conversas
+          <MessagesSquare size={19} /> Conversas
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => 'nav-item' + (isActive ? ' ativo' : '')}>
-          <SettingsIcon size={18} /> Configurações
+          <SettingsIcon size={19} /> Configurações
         </NavLink>
 
         <div className="sidebar-rodape">
+          <span className="dot" />
           {conexoesAtivas} conexão(ões) ativa(s)
         </div>
       </aside>
