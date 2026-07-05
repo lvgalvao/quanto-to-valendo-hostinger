@@ -7,6 +7,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
   Browsers,
+  fetchLatestBaileysVersion,
 } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import pino from 'pino';
@@ -45,7 +46,12 @@ export async function conectar(connectionId) {
   if (sockets.has(connectionId)) return sockets.get(connectionId);
 
   const { state, saveCreds } = await useMultiFileAuthState(pastaSessao(connectionId));
+  // Busca a versão mais recente do WhatsApp Web; usar versão defasada faz o WA
+  // recusar a conexão e o QR nunca aparecer.
+  const { version } = await fetchLatestBaileysVersion();
+  console.log(`[connectionManager] ${connectionId}: iniciando com WA version ${version.join('.')}`);
   const sock = makeWASocket({
+    version,
     auth: state,
     logger,
     browser: Browsers.appropriate('Chrome'),
@@ -63,36 +69,57 @@ export async function conectar(connectionId) {
         const dataUrl = await QRCode.toDataURL(qr);
         emitirStatus(connectionId, 'qr');
         if (io) io.emit('qr_update', { connectionId, qr: dataUrl });
+        console.log(`[connectionManager] ${connectionId}: QR gerado e emitido (${dataUrl.length} bytes)`);
       } catch (e) {
         console.error('[connectionManager] falha ao gerar QR', e.message);
       }
+    }
+
+    if (connection === 'connecting') {
+      if (io) io.emit('connection_status', { connectionId, status: 'connecting' });
     }
 
     if (connection === 'open') {
       const numero = sock.user?.id?.split(':')[0] || null;
       repo.atualizarStatusConexao(connectionId, 'open', numero);
       if (io) io.emit('connection_status', { connectionId, status: 'open', numero });
+      console.log(`[connectionManager] ${connectionId}: CONECTADO (numero=${numero})`);
     }
 
     if (connection === 'close') {
       sockets.delete(connectionId);
       const code = lastDisconnect?.error?.output?.statusCode;
-      const deslogado = code === DisconnectReason.loggedOut;
-      if (deslogado) {
-        // Sessão inválida: limpa para permitir novo pareamento.
+      console.log(
+        `[connectionManager] ${connectionId}: close (statusCode=${code} msg=${lastDisconnect?.error?.message || '-'})`
+      );
+
+      if (code === DisconnectReason.loggedOut) {
+        // Sessão inválida (deslogado): limpa para permitir novo pareamento.
         try {
           rmSync(pastaSessao(connectionId), { recursive: true, force: true });
         } catch {}
         emitirStatus(connectionId, 'close');
-      } else {
-        emitirStatus(connectionId, 'close');
-        // Reconecta automaticamente reusando a sessão salva (sem novo QR).
-        setTimeout(() => {
-          conectar(connectionId).catch((e) =>
-            console.error('[connectionManager] reconexão falhou', e.message)
-          );
-        }, 2500);
+        return;
       }
+
+      if (code === DisconnectReason.restartRequired) {
+        // Esperado logo APÓS o scan do QR. Reconecta JÁ (reusa creds salvos),
+        // mantendo "Conectando" — não volta para "Desconectado".
+        if (io) io.emit('connection_status', { connectionId, status: 'connecting' });
+        console.log(`[connectionManager] ${connectionId}: restart required (pós-scan), reconectando...`);
+        conectar(connectionId).catch((e) =>
+          console.error('[connectionManager] reconexão (restart) falhou', e.message)
+        );
+        return;
+      }
+
+      // Demais quedas: reconecta com pequeno atraso reusando a sessão salva.
+      emitirStatus(connectionId, 'close');
+      setTimeout(() => {
+        conectar(connectionId).catch((e) =>
+          console.error('[connectionManager] reconexão falhou', e.message)
+        );
+      }, 2500);
     }
   });
 

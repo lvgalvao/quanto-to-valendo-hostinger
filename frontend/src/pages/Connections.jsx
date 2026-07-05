@@ -32,6 +32,9 @@ export default function Connections({ onMudou }) {
         setQr((q) => (q?.connectionId === connectionId ? null : q));
         toast.success('Conexão estabelecida!');
       }
+      if (status === 'close') {
+        setQr((q) => (q?.connectionId === connectionId ? null : q));
+      }
       onMudou?.();
     };
     const onQr = ({ connectionId, qr: dataUrl }) => setQr({ connectionId, dataUrl });
@@ -88,13 +91,14 @@ export default function Connections({ onMudou }) {
                 <span className="dot" /> {b.texto}
               </span>
               <div className="card-acoes">
-                {c.status === 'open' ? (
-                  <button className="btn-ghost" onClick={() => desconectar(c.id)}>
-                    <PowerOff size={14} style={{ verticalAlign: '-2px', marginRight: 5 }} /> Desconectar
-                  </button>
-                ) : (
+                {c.status === 'close' ? (
                   <button className="btn-verde" onClick={() => conectar(c.id)}>
                     <Power size={14} style={{ verticalAlign: '-2px', marginRight: 5 }} /> Conectar
+                  </button>
+                ) : (
+                  <button className="btn-ghost" onClick={() => desconectar(c.id)}>
+                    <PowerOff size={14} style={{ verticalAlign: '-2px', marginRight: 5 }} />
+                    {c.status === 'open' ? ' Desconectar' : ' Cancelar'}
                   </button>
                 )}
                 <button className="btn-perigo" onClick={() => excluir(c.id)}>

@@ -33,6 +33,7 @@ export function migrar() {
       remote_jid TEXT NOT NULL,
       nome_contato TEXT,
       agente_ativo INTEGER NOT NULL DEFAULT 1,
+      aguardando_cv INTEGER NOT NULL DEFAULT 0,
       criada_em TEXT NOT NULL DEFAULT (datetime('now')),
       atualizada_em TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(connection_id, remote_jid)
@@ -55,6 +56,12 @@ export function migrar() {
       valor TEXT
     );
   `);
+
+  // Migração defensiva: adiciona aguardando_cv a bancos antigos (pré-gatilho ANALISE).
+  const colunas = db.prepare('PRAGMA table_info(conversas)').all().map((c) => c.name);
+  if (!colunas.includes('aguardando_cv')) {
+    db.exec('ALTER TABLE conversas ADD COLUMN aguardando_cv INTEGER NOT NULL DEFAULT 0');
+  }
 
   // Defaults de configuração (só insere se ausente).
   const upsertPadrao = db.prepare(

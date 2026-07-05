@@ -78,6 +78,10 @@ export function setAgenteAtivoConversa(id, ativo) {
   return getConversa(id);
 }
 
+export function setAguardandoCv(id, valor) {
+  db.prepare('UPDATE conversas SET aguardando_cv = ? WHERE id = ?').run(valor ? 1 : 0, id);
+}
+
 function tocarConversa(id) {
   db.prepare("UPDATE conversas SET atualizada_em = datetime('now') WHERE id = ?").run(id);
 }

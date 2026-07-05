@@ -15,6 +15,10 @@ import * as conexoes from './connectionManager.js';
 
 export const MIN_CV_CHARS = 200;
 
+// Palavra-chave que inicia o atendimento com o agente. O bot só analisa depois
+// de receber "ANALISE" (ou se a própria mensagem já trouxer a palavra + o CV).
+export const GATILHO = 'analise';
+
 let io = null;
 export function setIO(ioInstance) {
   io = ioInstance;
@@ -27,6 +31,19 @@ const emAndamento = new Set();
 /* ------------------------------------------------------------------ */
 /* Funções puras (testáveis)                                           */
 /* ------------------------------------------------------------------ */
+
+/** Normaliza texto: sem acento, minúsculo. */
+function normalizar(txt) {
+  return String(txt || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
+
+/** Verdadeiro se o texto contém a palavra-chave de gatilho (ANALISE/ANÁLISE). */
+export function contemGatilho(texto) {
+  return normalizar(texto).includes(GATILHO);
+}
 
 export function ehGrupoOuBroadcast(jid) {
   if (!jid) return true;
@@ -158,16 +175,46 @@ export async function processarMensagem(connectionId, msg, sock) {
   try {
     // 4. Roteamento do conteúdo.
     const rota = classificarConteudo(message);
+    const temCV = rota.acao === 'pdf' || rota.acao === 'curriculo';
+    const temGatilho = contemGatilho(extrairTextoMsg(message));
+    const armado = !!repo.getConversa(conversa.id).aguardando_cv;
 
-    if (rota.acao === 'doc_nao_pdf') {
-      await responder(sock, connectionId, conversa, 'Recebi seu arquivo, mas só consigo ler *PDF*. Me manda o currículo em PDF ou cola o texto aqui no chat. 🙂');
+    // GATE: só inicia o atendimento se veio a palavra ANALISE (ou a conversa já
+    // foi armada por ela). Sem gatilho e sem estar armado => só orienta.
+    if (!temGatilho && !armado) {
+      await responder(
+        sock,
+        connectionId,
+        conversa,
+        'Oi! Sou o *Quanto Tô Valendo* 👋\n\nQuer descobrir quanto você tá valendo no mercado de dados? Envie a palavra *ANALISE* que eu começo. 🚀'
+      );
       return;
     }
-    if (rota.acao === 'texto_curto') {
+
+    // Veio o gatilho, mas ainda sem um CV nesta mensagem => arma e pede o CV.
+    if (temGatilho && !temCV) {
+      repo.setAguardandoCv(conversa.id, true);
+      await responder(
+        sock,
+        connectionId,
+        conversa,
+        'Perfeito! 📄 Agora me manda seu *currículo em PDF* ou *cola o texto completo* aqui que eu faço sua análise.'
+      );
+      return;
+    }
+
+    // Já armado, mas a mensagem não traz um CV válido => orienta e continua armado.
+    if (armado && !temCV) {
+      if (rota.acao === 'doc_nao_pdf') {
+        await responder(sock, connectionId, conversa, 'Recebi seu arquivo, mas só consigo ler *PDF*. Me manda o currículo em PDF ou cola o texto aqui no chat. 🙂');
+        return;
+      }
+      // texto_curto
       await responder(sock, connectionId, conversa, 'Pra eu analisar direito, cola seu *currículo completo* aqui (experiência, cargos, tecnologias) ou manda o *PDF*. Com pouco texto eu não consigo estimar sua faixa. 🙂');
       return;
     }
 
+    // A partir daqui há um CV (pdf ou texto ≥ 200) e o gate foi liberado.
     // Extrai o texto do CV.
     let textoCV;
     if (rota.acao === 'pdf') {
@@ -207,6 +254,9 @@ export async function processarMensagem(connectionId, msg, sock) {
     // 7 + 8. Envia as 5 mensagens (com persistência e updates).
     const mensagens = renderizar(analise);
     await enviarAnalise(sock, connectionId, conversa, mensagens);
+
+    // Análise concluída: desarma. Nova análise exige a palavra ANALISE de novo.
+    repo.setAguardandoCv(conversa.id, false);
   } catch (e) {
     console.error('[messageHandler] erro inesperado', e.message);
     try {

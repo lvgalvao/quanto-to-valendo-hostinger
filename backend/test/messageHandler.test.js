@@ -5,6 +5,7 @@ import {
   extrairDocumento,
   deveIgnorarMensagem,
   classificarConteudo,
+  contemGatilho,
   MIN_CV_CHARS,
 } from '../src/managers/messageHandler.js';
 
@@ -54,5 +55,14 @@ describe('filtros puros do messageHandler', () => {
 
   it('reconhece PDF pela extensão mesmo sem mimetype', () => {
     expect(classificarConteudo({ documentMessage: { fileName: 'curriculo.PDF' } }).acao).toBe('pdf');
+  });
+
+  it('detecta a palavra-chave ANALISE (com/sem acento, caixa)', () => {
+    expect(contemGatilho('ANALISE')).toBe(true);
+    expect(contemGatilho('análise')).toBe(true);
+    expect(contemGatilho('quero uma Análise por favor')).toBe(true);
+    expect(contemGatilho('oi tudo bem?')).toBe(false);
+    expect(contemGatilho('')).toBe(false);
+    expect(contemGatilho(null)).toBe(false);
   });
 });

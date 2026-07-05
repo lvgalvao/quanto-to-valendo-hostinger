@@ -5,6 +5,7 @@ import Layout from './components/Layout.jsx';
 import Connections from './pages/Connections.jsx';
 import Conversations from './pages/Conversations.jsx';
 import Settings from './pages/Settings.jsx';
+import toast from 'react-hot-toast';
 import { temToken } from './lib/auth.js';
 import { conectarSocket } from './lib/socket.js';
 import { api } from './lib/api.js';
@@ -24,11 +25,21 @@ export default function App() {
 
   useEffect(() => {
     if (!logado) return;
-    conectarSocket();
     atualizarContador();
     const socket = conectarSocket();
+    const onConnect = () => console.log('[socket] conectado', socket.id);
+    const onErro = (e) => {
+      console.error('[socket] erro de conexão:', e.message);
+      toast.error('Sem conexão em tempo real com o servidor (Socket.IO). O QR pode não aparecer — verifique a porta 3001.');
+    };
+    socket.on('connect', onConnect);
+    socket.on('connect_error', onErro);
     socket.on('connection_status', atualizarContador);
-    return () => socket.off('connection_status', atualizarContador);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('connect_error', onErro);
+      socket.off('connection_status', atualizarContador);
+    };
   }, [logado]);
 
   if (!logado) return <Login onEntrar={() => setLogado(true)} />;
